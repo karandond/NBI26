@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Architecture & Workflow Documentation</title>
+<style>
+  /* ── Page setup ── */
+  @page {
+    size: A4;
+    margin: 20mm 18mm 20mm 18mm;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.65;
+    color: #1a1a2e;
+    background: #fff;
+    padding: 40px 60px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* ── Headings ── */
+  h1 {
+    font-size: 22pt;
+    color: #0f3460;
+    border-bottom: 3px solid #0f3460;
+    padding-bottom: 10px;
+    margin-bottom: 24px;
+    margin-top: 0;
+  }
+  h2 {
+    font-size: 14pt;
+    color: #0f3460;
+    border-bottom: 1.5px solid #c8d8e8;
+    padding-bottom: 6px;
+    margin-top: 36px;
+    margin-bottom: 14px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 11.5pt;
+    color: #16213e;
+    margin-top: 22px;
+    margin-bottom: 8px;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 10.5pt;
+    color: #16213e;
+    margin-top: 16px;
+    margin-bottom: 6px;
+    font-style: italic;
+  }
+
+  /* ── Paragraphs ── */
+  p { margin-bottom: 10px; }
+
+  /* ── Code & Pre ── */
+  code {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 9pt;
+    background: #f0f4f8;
+    border: 1px solid #d0dce8;
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: #c7254e;
+  }
+  pre {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 8.5pt;
+    background: #f6f8fa;
+    border: 1px solid #d0dce8;
+    border-left: 4px solid #0f3460;
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin: 10px 0 14px 0;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.5;
+    color: #1a1a2e;
+    page-break-inside: avoid;
+  }
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+
+  /* ── Tables ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 16px 0;
+    font-size: 10pt;
+    page-break-inside: avoid;
+  }
+  thead {
+    background: #0f3460;
+    color: #fff;
+  }
+  th {
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #e0e8f0;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f7fafd; }
+  td code { font-size: 8.5pt; }
+
+  /* ── Lists ── */
+  ul, ol {
+    margin: 8px 0 10px 22px;
+  }
+  li { margin-bottom: 4px; }
+  li code { font-size: 9pt; }
+
+  /* ── Horizontal Rule ── */
+  hr {
+    border: none;
+    border-top: 1.5px solid #c8d8e8;
+    margin: 28px 0;
+  }
+
+  /* ── Callout boxes ── */
+  .callout {
+    border-left: 4px solid #e67e22;
+    background: #fef9f0;
+    padding: 10px 16px;
+    margin: 14px 0;
+    border-radius: 0 4px 4px 0;
+    font-size: 10pt;
+    page-break-inside: avoid;
+  }
+  .callout strong { color: #c0392b; }
+
+  /* ── Diagram / ASCII art ── */
+  .diagram {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 8pt;
+    background: #f0f4f8;
+    border: 1px solid #c8d8e8;
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin: 12px 0 16px 0;
+    line-height: 1.45;
+    overflow-x: auto;
+    white-space: pre;
+    page-break-inside: avoid;
+  }
+
+  /* ── Print overrides ── */
+  @media print {
+    body { padding: 0; }
+    h2 { page-break-before: auto; }
+    pre, table, .diagram { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Project Architecture &amp; Workflow Documentation</h1>
+
+<h2>Overview</h2>
+<p>This is a full-stack web application with a React frontend and an Express.js backend, using Google Cloud Firestore as the database. Both sides are deployed independently to Vercel.</p>
+
+<pre>K:/project/
+├── frontend/     React (Vite) SPA → deploys as Vercel static site
+└── backend/      Express API     → deploys as Vercel Serverless Functions</pre>
+
+<hr>
+
+<h2>System Architecture Diagram</h2>
+
+<div class="diagram">┌─────────────────────────────────────────────────────────────┐
+│                        BROWSER                              │
+│                                                             │
+│  React SPA (Vite)                                           │
+│  ┌──────────────┐   ┌──────────────┐   ┌────────────────┐  │
+│  │  React Router│   │  AuthContext │   │  Axios Instance│  │
+│  │  (routing)   │   │  (JWT state) │   │  (HTTP client) │  │
+│  └──────┬───────┘   └──────┬───────┘   └───────┬────────┘  │
+│         │                  │                   │            │
+│         └──────────────────┴───────────────────┘            │
+└─────────────────────────────────────────┬───────────────────┘
+                                          │ HTTPS
+                                          │ Authorization: Bearer &lt;JWT&gt;
+                                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     BACKEND (Express)                       │
+│                                                             │
+│  ┌─────────┐   ┌──────────────┐   ┌────────────────────┐   │
+│  │  CORS   │→  │express.json()│→  │     Routes         │   │
+│  │middleware│  │  (body parse)│   │  /api/health       │   │
+│  └─────────┘   └──────────────┘   │  /api/login        │   │
+│                                   │  (future protected) │   │
+│                                   └──────────┬─────────┘   │
+│                                              │              │
+│                                   ┌──────────▼─────────┐   │
+│                                   │   verifyToken.js   │   │
+│                                   │  (JWT middleware,  │   │
+│                                   │   future routes)   │   │
+│                                   └──────────┬─────────┘   │
+└──────────────────────────────────────────────┼─────────────┘
+                                               │
+                                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Google Cloud Firestore (nbi2026)               │
+│                                                             │
+│  users collection                                           │
+│  { email, password (bcrypt), role, createdAt }              │
+└─────────────────────────────────────────────────────────────┘</div>
+
+<hr>
+
+<h2>Backend</h2>
+
+<h3>Entry Points</h3>
+<table>
+  <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>backend/app.js</code></td><td>Express app definition — registers middleware and routes</td></tr>
+    <tr><td><code>backend/api/index.js</code></td><td>Vercel serverless adapter — re-exports <code>app</code> for deployment</td></tr>
+  </tbody>
+</table>
+
+<h3>Starting the Server Locally</h3>
+<pre>cd backend
+npm install
+node app.js        # runs on PORT from .env (default 5000)</pre>
+
+<h3>Middleware Stack (applied to every request)</h3>
+<ol>
+  <li><strong><code>cors()</code></strong> — allows all origins (no restriction currently)</li>
+  <li><strong><code>express.json()</code></strong> — parses JSON request bodies</li>
+</ol>
+
+<h3>API Endpoints</h3>
+
+<h4>GET /api/health</h4>
+<ul>
+  <li><strong>Auth:</strong> None (public)</li>
+  <li><strong>Purpose:</strong> Liveness check — confirms the API process is running</li>
+  <li><strong>Response:</strong></li>
+</ul>
+<pre>{ "success": true, "message": "API is running" }</pre>
+
+<h4>POST /api/login</h4>
+<ul>
+  <li><strong>Auth:</strong> None (public — this IS the auth endpoint)</li>
+  <li><strong>File:</strong> <code>backend/src/routes/auth.js</code></li>
+  <li><strong>Request body:</strong></li>
+</ul>
+<pre>{ "email": "user@example.com", "password": "plaintext_password" }</pre>
+
+<p><strong>Step-by-step flow:</strong></p>
+<div class="diagram">1. Validate body
+   ├── email or password missing?
+   │     → 400 { success: false, message: "Email and password are required" }
+   └── both present → continue
+
+2. Query Firestore
+   db.collection('users').where('email', '==', email).limit(1).get()
+   ├── No matching document?
+   │     → 401 { success: false, message: "Invalid credentials" }
+   └── User found → continue
+
+3. Verify password
+   bcrypt.compare(password, user.password)
+   ├── Does not match?
+   │     → 401 { success: false, message: "Invalid credentials" }
+   └── Match → continue
+
+4. Sign JWT
+   jwt.sign({ id, email, role }, JWT_SECRET, { expiresIn: '1d' })
+
+5. Respond
+   → 200 {
+       success: true,
+       token: "&lt;signed JWT&gt;",
+       user: { id, email, role }
+     }</div>
+
+<p><strong>Error response (any unexpected server error):</strong></p>
+<pre>{ "success": false, "message": "Server error" }</pre>
+
+<hr>
+
+<h3>Auth Middleware — verifyToken</h3>
+<p><strong>File:</strong> <code>backend/src/middleware/verifyToken.js</code></p>
+<p>This middleware is <strong>ready but not yet applied to any route</strong>. It will protect future endpoints.</p>
+
+<p><strong>How it works:</strong></p>
+<div class="diagram">Request arrives with header:
+  Authorization: Bearer eyJhbGci...
+
+1. Extract token from header
+   ├── No Authorization header or wrong format?
+   │     → 401 { success: false, message: "No token provided" }
+   └── Token present → continue
+
+2. jwt.verify(token, JWT_SECRET)
+   ├── Expired or invalid signature?
+   │     → 401 { success: false, message: "Token expired or invalid" }
+   └── Valid → attach decoded payload to req.user, call next()</div>
+
+<p><strong>To protect a future route:</strong></p>
+<pre>// In app.js:
+app.use('/api/users', verifyToken, require('./src/routes/users'))</pre>
+
+<p>After <code>verifyToken</code> runs, route handlers can access <code>req.user.id</code>, <code>req.user.email</code>, and <code>req.user.role</code>.</p>
+
+<hr>
+
+<h3>Firebase / Firestore</h3>
+<p><strong>File:</strong> <code>backend/src/firebase.js</code></p>
+<p>Initializes the Firebase Admin SDK once (guards against double-init). Exports:</p>
+<ul>
+  <li><code>admin</code> — the Firebase Admin instance</li>
+  <li><code>db</code> — the Firestore database client</li>
+</ul>
+<p><strong>Current credential loading:</strong> reads from <code>serviceAccountKey.json</code> (local file).</p>
+<p><strong>Intended credential loading (env-var based, documented in <code>.env.example</code>):</strong></p>
+<pre>FIREBASE_PROJECT_ID=nbi2026
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-fbsvc@...
+FIREBASE_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."</pre>
+
+<hr>
+
+<h3>Database — Firestore Collections</h3>
+<h4>users collection</h4>
+<table>
+  <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>email</code></td><td>string</td><td>User's email address (lookup key)</td></tr>
+    <tr><td><code>password</code></td><td>string</td><td>bcrypt hash (10 salt rounds)</td></tr>
+    <tr><td><code>role</code></td><td>string</td><td>e.g. <code>"admin"</code> — included in JWT, reserved for future RBAC</td></tr>
+    <tr><td><code>createdAt</code></td><td>timestamp</td><td>Server-side timestamp set on creation</td></tr>
+  </tbody>
+</table>
+<p>Document IDs are auto-generated by Firestore. The auto-generated ID becomes the <code>id</code> in the JWT.</p>
+
+<p><strong>To seed the initial admin user:</strong></p>
+<pre>cd backend
+node seedUser.js
+# Seeds: admin@test.com / admin123 / role: admin</pre>
+
+<hr>
+
+<h3>Backend Environment Variables</h3>
+<p><strong>File:</strong> <code>backend/.env</code> (copy from <code>backend/.env.example</code>)</p>
+<table>
+  <thead><tr><th>Variable</th><th>Required</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>PORT</code></td><td>No</td><td>HTTP port for local dev (default 5000)</td></tr>
+    <tr><td><code>JWT_SECRET</code></td><td>Yes</td><td>Secret string for signing JWTs — use a long random value in production</td></tr>
+    <tr><td><code>FIREBASE_PROJECT_ID</code></td><td>Yes*</td><td>Firebase project ID</td></tr>
+    <tr><td><code>FIREBASE_CLIENT_EMAIL</code></td><td>Yes*</td><td>Firebase service account email</td></tr>
+    <tr><td><code>FIREBASE_PRIVATE_KEY</code></td><td>Yes*</td><td>Firebase private key with <code>\n</code> escaped</td></tr>
+  </tbody>
+</table>
+<p><em>*Currently loaded from <code>serviceAccountKey.json</code> instead.</em></p>
+
+<hr>
+
+<h2>Frontend</h2>
+
+<h3>Stack</h3>
+<ul>
+  <li><strong>React 18</strong> with Vite</li>
+  <li><strong>React Router v6</strong> for client-side navigation</li>
+  <li><strong>Axios</strong> for HTTP requests</li>
+  <li><strong>Context API</strong> for global auth state</li>
+</ul>
+
+<h3>Key Files</h3>
+<table>
+  <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>frontend/src/main.jsx</code></td><td>App entry — mounts React</td></tr>
+    <tr><td><code>frontend/src/App.jsx</code></td><td>Root component, router setup</td></tr>
+    <tr><td><code>frontend/src/context/AuthContext.jsx</code></td><td>Global auth state (JWT + user)</td></tr>
+    <tr><td><code>frontend/src/routes/ProtectedRoute.jsx</code></td><td>Route guard component</td></tr>
+    <tr><td><code>frontend/src/api/auth.js</code></td><td>All HTTP calls to the backend</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h3>Authentication Flow (Frontend)</h3>
+
+<h4>Login</h4>
+<div class="diagram">User fills LoginPage form
+       │
+       ▼
+login(email, password)          ← src/api/auth.js
+  POST /api/login
+       │
+  ┌────▼────────────────────────────────────────┐
+  │ Success (200)                               │
+  │   loginUser(token, user)  ← AuthContext     │
+  │   localStorage.setItem('token', token)      │
+  │   localStorage.setItem('user', user)        │
+  │   React state updated                       │
+  │   → redirect to /dashboard                 │
+  └─────────────────────────────────────────────┘
+       │
+  ┌────▼────────────────────────────────────────┐
+  │ Failure (401/400)                           │
+  │   Show error message from response body     │
+  └─────────────────────────────────────────────┘</div>
+
+<h4>Session Restore (on page refresh/reload)</h4>
+<div class="diagram">App mounts → AuthProvider useEffect runs
+       │
+       ▼
+Read localStorage('token') and localStorage('user')
+       │
+  Found?     → set state { user, token, loading: false }
+  Not found? → set state { loading: false }</div>
+
+<h4>Logout</h4>
+<div class="diagram">logoutUser() called
+  → localStorage.removeItem('token')
+  → localStorage.removeItem('user')
+  → React state cleared
+  → ProtectedRoute redirects to /login</div>
+
+<hr>
+
+<h3>Route Protection</h3>
+<p><strong>File:</strong> <code>frontend/src/routes/ProtectedRoute.jsx</code></p>
+<p>Wrap any page component that requires login:</p>
+<pre>&lt;Route path="/dashboard" element={
+  &lt;ProtectedRoute&gt;
+    &lt;DashboardPage /&gt;
+  &lt;/ProtectedRoute&gt;
+} /&gt;</pre>
+
+<p><strong>Logic:</strong></p>
+<div class="diagram">ProtectedRoute renders
+  ├── loading === true  → show "Loading..." (prevents flash-of-login)
+  ├── !isAuthenticated  → &lt;Navigate to="/login" /&gt;
+  └── isAuthenticated   → render children (the protected page)</div>
+
+<hr>
+
+<h3>HTTP Client — Axios Instance</h3>
+<p><strong>File:</strong> <code>frontend/src/api/auth.js</code></p>
+<p>A single configured Axios instance is shared across all API calls:</p>
+<div class="diagram">Every outgoing request:
+  1. Request interceptor fires
+  2. Reads localStorage.getItem('token')
+  3. If token exists → adds header: Authorization: Bearer &lt;token&gt;
+  4. Request sent to VITE_API_URL/&lt;path&gt;</div>
+
+<p><strong>Error normalization in <code>login()</code>:</strong></p>
+<ul>
+  <li>Server returned a body → return <code>error.response.data</code></li>
+  <li>Network failure / no response → return <code>{ success: false, message: "Network error. Please try again." }</code></li>
+</ul>
+
+<hr>
+
+<h3>Frontend Environment Variables</h3>
+<p><strong>File:</strong> <code>frontend/.env</code></p>
+<table>
+  <thead><tr><th>Variable</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>VITE_API_URL</code></td><td>Backend base URL. Local: <code>http://localhost:5000</code>. Production: your Vercel backend URL</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>Deployment</h2>
+<p>Both apps deploy to Vercel independently.</p>
+
+<h3>Backend (<code>backend/vercel.json</code>)</h3>
+<pre>{ "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }] }</pre>
+<p>All traffic is routed to <code>api/index.js</code>, which exports the Express app as a Vercel serverless function.</p>
+
+<h3>Frontend (<code>frontend/vercel.json</code>)</h3>
+<pre>{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }</pre>
+<p>All traffic falls through to <code>index.html</code>, allowing React Router to handle client-side routing (deep links work correctly).</p>
+
+<h3>Deploy Steps</h3>
+<pre># Backend
+cd backend
+vercel --prod
+
+# Frontend — update VITE_API_URL to point to deployed backend first
+cd frontend
+vercel --prod</pre>
+
+<hr>
+
+<h2>Security Notes</h2>
+
+<div class="callout">
+  <strong>Action required before production use:</strong>
+</div>
+
+<ol>
+  <li><strong><code>serviceAccountKey.json</code> must not be in the repo.</strong> This file contains a real RSA private key. Revoke and rotate it in the Firebase console, then switch <code>firebase.js</code> to read credentials from environment variables (the <code>.env.example</code> already documents the correct variable names).</li>
+  <li><strong>Replace the weak <code>JWT_SECRET</code>.</strong> The current value is weak and predictable. Generate a strong random secret:
+    <pre>node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"</pre>
+  </li>
+  <li><strong>Restrict CORS.</strong> Replace <code>app.use(cors())</code> with an allowlist:
+    <pre>app.use(cors({ origin: 'https://your-frontend.vercel.app' }))</pre>
+  </li>
+  <li><strong>Role-based access control</strong> — the <code>role</code> field is stored and included in JWTs but never checked. Add role checks inside <code>verifyToken</code> or as a separate middleware when protecting role-restricted routes.</li>
+</ol>
+
+</body>
+</html>

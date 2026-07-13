@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
+import AdminRoute from '../routes/AdminRoute.jsx'
+import AdminUsers from './AdminUsers.jsx'
 
 function DashboardHome() {
   return <h2>Dashboard</h2>
@@ -25,6 +27,14 @@ export default function Dashboard() {
             <Route index element={<DashboardHome />} />
             <Route path="profile" element={<Profile />} />
             <Route path="settings" element={<Settings />} />
+            <Route
+              path="users"
+              element={
+                <AdminRoute>
+                  <AdminUsers />
+                </AdminRoute>
+              }
+            />
           </Routes>
         </main>
       </div>

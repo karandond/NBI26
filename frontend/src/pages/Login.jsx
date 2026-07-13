@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { login } from '../api/auth.js'
 import { useAuth } from '../context/AuthContext.jsx'
 
@@ -67,6 +67,10 @@ export default function Login() {
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Signing in...' : 'Login'}
           </button>
+
+          <p style={{ textAlign: 'center', marginTop: 16, fontSize: 14 }}>
+            Don't have an account? <Link to="/signup">Sign Up</Link>
+          </p>
         </form>
       </div>
     </div>

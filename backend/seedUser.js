@@ -1,20 +1,25 @@
 /**
- * One-off script to insert an admin user into Firestore
- * with a bcrypt-hashed password.
+ * Create a user in Firestore with a bcrypt-hashed password.
  *
  * Usage:
- *   node seedUser.js
+ *   node seedUser.js <email> <password> [role]
  *
- * Edit the EMAIL / PASSWORD / ROLE constants below before running,
- * or wire this up to read from process.argv if you seed often.
+ * Examples:
+ *   node seedUser.js john@example.com secret123
+ *   node seedUser.js jane@example.com pass456 admin
  */
 require('dotenv').config()
 const bcrypt = require('bcrypt')
 const { db, admin } = require('./src/firebase')
 
-const EMAIL = 'admin@test.com'
-const PASSWORD = 'admin123'
-const ROLE = 'admin'
+const [,, EMAIL, PASSWORD, ROLE = 'user'] = process.argv
+
+if (!EMAIL || !PASSWORD) {
+  console.error('Usage: node seedUser.js <email> <password> [role]')
+  console.error('Example: node seedUser.js john@example.com secret123 admin')
+  process.exit(1)
+}
+
 const SALT_ROUNDS = 10
 
 async function seed() {
@@ -28,17 +33,18 @@ async function seed() {
 
     const hashedPassword = await bcrypt.hash(PASSWORD, SALT_ROUNDS)
 
-    await db.collection('users').add({
+    const doc = await db.collection('users').add({
       email: EMAIL,
       password: hashedPassword,
       role: ROLE,
+      status: 'approved',
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     })
 
-    console.log(`Seeded user: ${EMAIL} / ${PASSWORD} (role: ${ROLE})`)
+    console.log(`Created user: ${EMAIL} | role: ${ROLE} | id: ${doc.id}`)
     process.exit(0)
   } catch (err) {
-    console.error('Seeding failed:', err)
+    console.error('Failed:', err)
     process.exit(1)
   }
 }
