@@ -9,8 +9,8 @@ export function AuthProvider({ children }) {
 
   // On first load, restore session from localStorage
   useEffect(() => {
-    const storedToken = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
+    const storedToken = localStorage.getItem('token') || sessionStorage.getItem('token')
+    const storedUser  = localStorage.getItem('user')  || sessionStorage.getItem('user')
 
     if (storedToken && storedUser) {
       setToken(storedToken)
@@ -19,9 +19,10 @@ export function AuthProvider({ children }) {
     setLoading(false)
   }, [])
 
-  function loginUser(newToken, newUser) {
-    localStorage.setItem('token', newToken)
-    localStorage.setItem('user', JSON.stringify(newUser))
+  function loginUser(newToken, newUser, remember = true) {
+    const store = remember ? localStorage : sessionStorage
+    store.setItem('token', newToken)
+    store.setItem('user', JSON.stringify(newUser))
     setToken(newToken)
     setUser(newUser)
   }
@@ -29,6 +30,8 @@ export function AuthProvider({ children }) {
   function logoutUser() {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
     setToken(null)
     setUser(null)
   }
