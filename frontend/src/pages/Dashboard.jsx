@@ -1,9 +1,12 @@
 import { Routes, Route } from 'react-router-dom'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Navbar from '../components/Navbar.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import AdminRoute from '../routes/AdminRoute.jsx'
 import AdminUsers from './AdminUsers.jsx'
+import AdminCustomers from './AdminCustomers.jsx'
+import AdminDashboard from './AdminDashboard.jsx'
+import UserDashboard from './UserDashboard.jsx'
 import { getUsers } from '../api/auth.js'
 import { useAuth } from '../context/AuthContext.jsx'
 
@@ -31,33 +34,6 @@ export function useToast() {
   return { toasts, push }
 }
 
-// ── Stat cards ────────────────────────────────────────────
-const STATS_CONFIG = [
-  { key: 'total',    label: 'Total Users',      accent: '#6366f1' },
-  { key: 'pending',  label: 'Pending Approval', accent: '#f59e0b' },
-  { key: 'approved', label: 'Approved',         accent: '#22c55e' },
-  { key: 'rejected', label: 'Rejected',         accent: '#ef4444' },
-]
-
-function DashboardHome({ stats }) {
-  return (
-    <div>
-      <div className="page-header">
-        <h2>Overview</h2>
-        <p>Welcome back. Here's what's happening.</p>
-      </div>
-      <div className="stat-grid">
-        {STATS_CONFIG.map(({ key, label, accent }) => (
-          <div className="stat-card" key={key} style={{ borderTop: `3px solid ${accent}` }}>
-            <div className="stat-value" style={{ color: accent }}>{stats[key]}</div>
-            <div className="stat-label">{label}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 function Profile() {
   return (
     <div className="page-header">
@@ -67,39 +43,29 @@ function Profile() {
   )
 }
 
-function Settings() {
-  return (
-    <div className="page-header">
-      <h2>Settings</h2>
-      <p>Configure your preferences.</p>
-    </div>
-  )
-}
-
 // ── Shell ─────────────────────────────────────────────────
 export default function Dashboard() {
   const { user } = useAuth()
   const { toasts, push } = useToast()
-  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 })
   const [pendingCount, setPendingCount] = useState(0)
+  const intervalRef = useRef(null)
+  const isAdmin = user?.role === 'admin'
 
-  function loadStats() {
-    if (user?.role !== 'admin') return
-    getUsers().then((res) => {
-      if (!res.success) return
-      const users = res.users
-      const pending = users.filter((u) => u.status === 'pending').length
-      setStats({
-        total:    users.length,
-        pending,
-        approved: users.filter((u) => u.status === 'approved').length,
-        rejected: users.filter((u) => u.status === 'rejected').length,
-      })
-      setPendingCount(pending)
-    })
+  async function loadPending() {
+    if (!isAdmin) return
+    const res = await getUsers()
+    if (res.success) {
+      setPendingCount(res.users.filter((u) => u.status === 'pending').length)
+    }
   }
 
-  useEffect(() => { loadStats() }, [user])
+  useEffect(() => {
+    loadPending()
+    if (isAdmin) {
+      intervalRef.current = setInterval(loadPending, 30_000)
+    }
+    return () => clearInterval(intervalRef.current)
+  }, [user])
 
   return (
     <div className="app-layout">
@@ -108,14 +74,36 @@ export default function Dashboard() {
         <Navbar pendingCount={pendingCount} />
         <main className="page-content">
           <Routes>
-            <Route index element={<DashboardHome stats={stats} />} />
-            <Route path="profile"  element={<Profile />} />
-            <Route path="settings" element={<Settings />} />
+            {/* Home */}
+            <Route
+              index
+              element={isAdmin ? <AdminDashboard /> : <UserDashboard />}
+            />
+
+            {/* Project workspace — shared route, component differs by role */}
+            <Route
+              path="project/:projectId"
+              element={isAdmin ? <AdminDashboard /> : <UserDashboard />}
+            />
+
+            <Route path="profile" element={<Profile />} />
+
+            {/* Settings: customer management for admin, generic for users */}
+            <Route
+              path="settings"
+              element={
+                isAdmin
+                  ? <AdminCustomers toast={push} />
+                  : <div className="page-header"><h2>Settings</h2><p>Configure your preferences.</p></div>
+              }
+            />
+
+            {/* Admin only */}
             <Route
               path="users"
               element={
                 <AdminRoute>
-                  <AdminUsers toast={push} onStatusChange={loadStats} />
+                  <AdminUsers toast={push} onStatusChange={loadPending} />
                 </AdminRoute>
               }
             />

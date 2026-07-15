@@ -39,19 +39,18 @@ function IconUsers() {
   )
 }
 
-const NAV = [
-  { to: '/dashboard',          end: true,  Icon: IconGrid,     label: 'Dashboard' },
-  { to: '/dashboard/profile',  end: false, Icon: IconUser,     label: 'Profile' },
-  { to: '/dashboard/settings', end: false, Icon: IconSettings, label: 'Settings' },
-]
-
-const ADMIN_NAV = [
-  { to: '/dashboard/users', end: false, Icon: IconUsers, label: 'User Management', adminBadge: true },
-]
+function IconFolder() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+    </svg>
+  )
+}
 
 export default function Sidebar({ pendingCount = 0 }) {
   const { user } = useAuth()
   const avatar = user?.email?.[0]?.toUpperCase() || '?'
+  const isAdmin = user?.role === 'admin'
 
   return (
     <aside className="sidebar">
@@ -65,37 +64,34 @@ export default function Sidebar({ pendingCount = 0 }) {
       </div>
 
       <nav className="sidebar-nav">
-        {NAV.map(({ to, end, Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) => (isActive ? 'active' : '')}
-          >
-            <span className="nav-icon"><Icon /></span>
-            <span>{label}</span>
-          </NavLink>
-        ))}
+        {/* Common */}
+        <NavLink to="/dashboard" end className={({ isActive }) => isActive ? 'active' : ''}>
+          <span className="nav-icon"><IconGrid /></span>
+          <span>Dashboard</span>
+        </NavLink>
 
-        {user?.role === 'admin' && (
+        <NavLink to="/dashboard/profile" className={({ isActive }) => isActive ? 'active' : ''}>
+          <span className="nav-icon"><IconUser /></span>
+          <span>Profile</span>
+        </NavLink>
+
+        <NavLink to="/dashboard/settings" className={({ isActive }) => isActive ? 'active' : ''}>
+          <span className="nav-icon"><IconSettings /></span>
+          <span>Settings</span>
+        </NavLink>
+
+        {/* Admin section */}
+        {isAdmin && (
           <>
             <div className="nav-section-label">Admin</div>
-            {ADMIN_NAV.map(({ to, end, Icon, label, adminBadge }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                className={({ isActive }) => (isActive ? 'active' : '')}
-              >
-                <span className="nav-icon"><Icon /></span>
-                <span>{label}</span>
-                {adminBadge && pendingCount > 0 && (
-                  <span className="nav-badge">{pendingCount}</span>
-                )}
-              </NavLink>
-            ))}
+            <NavLink to="/dashboard/users" className={({ isActive }) => isActive ? 'active' : ''}>
+              <span className="nav-icon"><IconUsers /></span>
+              <span>User Management</span>
+              {pendingCount > 0 && <span className="nav-badge">{pendingCount}</span>}
+            </NavLink>
           </>
         )}
+
       </nav>
 
       <div className="sidebar-footer">

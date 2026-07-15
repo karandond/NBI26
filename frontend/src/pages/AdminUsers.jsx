@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getUsers, updateUserStatus } from '../api/auth.js'
+import { getCustomers, assignCustomer } from '../api/customers.js'
 
 function StatusBadge({ status }) {
   const map = {
@@ -22,26 +23,30 @@ function SkeletonRows() {
       <td><div className="skeleton" style={{ height: 32, width: '80%' }} /></td>
       <td><div className="skeleton" style={{ height: 22, width: 70 }} /></td>
       <td><div className="skeleton" style={{ height: 18, width: 80 }} /></td>
+      <td><div className="skeleton" style={{ height: 28, width: 110 }} /></td>
       <td><div className="skeleton" style={{ height: 28, width: 120 }} /></td>
     </tr>
   ))
 }
 
 export default function AdminUsers({ toast, onStatusChange }) {
-  const [users, setUsers]               = useState([])
-  const [loading, setLoading]           = useState(true)
-  const [actionLoading, setActionLoading] = useState(null)
-  const [error, setError]               = useState('')
+  const [users, setUsers]                   = useState([])
+  const [customers, setCustomers]           = useState([])
+  const [loading, setLoading]               = useState(true)
+  const [actionLoading, setActionLoading]   = useState(null)
+  const [assigningUser, setAssigningUser]   = useState(null)
+  const [error, setError]                   = useState('')
 
-  async function fetchUsers() {
+  async function fetchAll() {
     setLoading(true)
-    const res = await getUsers()
+    const [usersRes, custRes] = await Promise.all([getUsers(), getCustomers()])
     setLoading(false)
-    if (res.success) setUsers(res.users)
-    else setError(res.message || 'Failed to load users.')
+    if (usersRes.success) setUsers(usersRes.users)
+    else setError(usersRes.message || 'Failed to load users.')
+    if (custRes.success) setCustomers(custRes.customers)
   }
 
-  useEffect(() => { fetchUsers() }, [])
+  useEffect(() => { fetchAll() }, [])
 
   async function handleStatus(id, email, status) {
     setActionLoading(id + status)
@@ -56,14 +61,29 @@ export default function AdminUsers({ toast, onStatusChange }) {
     }
   }
 
-  const pending  = users.filter((u) => u.status === 'pending')
-  const rest     = users.filter((u) => u.status !== 'pending')
+  async function handleAssignCustomer(userId, customerId) {
+    setAssigningUser(userId)
+    const res = await assignCustomer(userId, customerId || null)
+    setAssigningUser(null)
+    if (res.success) {
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, customerId: customerId || null } : u))
+      )
+      const customerName = customers.find((c) => c.id === customerId)?.name
+      toast?.(customerName ? `Assigned to ${customerName}.` : 'Customer removed.', 'success')
+    } else {
+      toast?.(res.message || 'Failed to assign customer.', 'error')
+    }
+  }
+
+  const pending = users.filter((u) => u.status === 'pending')
+  const rest    = users.filter((u) => u.status !== 'pending')
 
   return (
     <div>
       <div className="page-header">
         <h2>User Management</h2>
-        <p>Review and approve or reject user registration requests.</p>
+        <p>Review, approve or reject registration requests and assign customers.</p>
       </div>
 
       {error && <div className="alert alert-error"><span>⚠</span> {error}</div>}
@@ -81,6 +101,7 @@ export default function AdminUsers({ toast, onStatusChange }) {
                 <th>User</th>
                 <th>Status</th>
                 <th>Registered</th>
+                <th>Customer</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -89,7 +110,7 @@ export default function AdminUsers({ toast, onStatusChange }) {
                 <SkeletonRows />
               ) : pending.length === 0 ? (
                 <tr>
-                  <td colSpan={4}>
+                  <td colSpan={5}>
                     <div className="empty-state">
                       <div className="empty-state-icon">🎉</div>
                       <p>No pending requests</p>
@@ -101,8 +122,11 @@ export default function AdminUsers({ toast, onStatusChange }) {
                   <UserRow
                     key={user.id}
                     user={user}
+                    customers={customers}
                     actionLoading={actionLoading}
+                    assigningUser={assigningUser}
                     onAction={handleStatus}
+                    onAssign={handleAssignCustomer}
                   />
                 ))
               )}
@@ -124,6 +148,7 @@ export default function AdminUsers({ toast, onStatusChange }) {
                 <th>User</th>
                 <th>Status</th>
                 <th>Registered</th>
+                <th>Customer</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -132,7 +157,7 @@ export default function AdminUsers({ toast, onStatusChange }) {
                 <SkeletonRows />
               ) : rest.length === 0 ? (
                 <tr>
-                  <td colSpan={4}>
+                  <td colSpan={5}>
                     <div className="empty-state">
                       <div className="empty-state-icon">📭</div>
                       <p>No users yet</p>
@@ -144,8 +169,11 @@ export default function AdminUsers({ toast, onStatusChange }) {
                   <UserRow
                     key={user.id}
                     user={user}
+                    customers={customers}
                     actionLoading={actionLoading}
+                    assigningUser={assigningUser}
                     onAction={handleStatus}
+                    onAssign={handleAssignCustomer}
                   />
                 ))
               )}
@@ -157,7 +185,7 @@ export default function AdminUsers({ toast, onStatusChange }) {
   )
 }
 
-function UserRow({ user, actionLoading, onAction }) {
+function UserRow({ user, customers, actionLoading, assigningUser, onAction, onAssign }) {
   const avatar = user.email[0].toUpperCase()
   const date = user.createdAt
     ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -173,6 +201,19 @@ function UserRow({ user, actionLoading, onAction }) {
       </td>
       <td><StatusBadge status={user.status} /></td>
       <td style={{ color: '#64748b', fontSize: 13 }}>{date}</td>
+      <td>
+        <select
+          className="customer-select"
+          value={user.customerId || ''}
+          disabled={assigningUser === user.id}
+          onChange={(e) => onAssign(user.id, e.target.value)}
+        >
+          <option value="">— None —</option>
+          {customers.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </td>
       <td>
         <div className="action-buttons">
           {user.status !== 'approved' && (

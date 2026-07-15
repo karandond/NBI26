@@ -6,6 +6,7 @@ const TITLES = {
   '/dashboard/profile':  'Profile',
   '/dashboard/settings': 'Settings',
   '/dashboard/users':    'User Management',
+  '/dashboard/projects': 'My Projects',
 }
 
 function IconBell() {
