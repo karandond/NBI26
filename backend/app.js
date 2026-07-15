@@ -17,7 +17,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 app.use(cors({
   origin(origin, cb) {
     if (!origin || allowedOrigins.some((o) => origin.startsWith(o))) return cb(null, true)
-    cb(new Error('Not allowed by CORS'))
+    cb(null, false)
   },
   credentials: true,
 }))
